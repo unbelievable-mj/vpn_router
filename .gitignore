@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# 虚拟环境
+.venv/
+
+# 本工具本地运行状态（每台机器不同，不应入库）
+.vpn_route_bypass_state.json
+
+# 本机运行配置（含个人环境信息，只保留 example 模板入库）
+config.json
+
+# macOS
+.DS_Store

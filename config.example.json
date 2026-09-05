@@ -1,0 +1,26 @@
+{
+  "prefixes": [
+    "https://vpn.school.example",
+    "https://intra.company.example",
+    "https://portal.internal.company.example"
+  ],
+  "interval_seconds": 120,
+  "local_gateway": null,
+  "state_file": ".vpn_route_bypass_state.json",
+  "dry_run": false,
+
+  "manage_hosts": true,
+  "doh_enabled": true,
+  "doh_urls": [
+    "https://223.5.5.5/resolve?name={host}&type=A",
+    "https://dns.alidns.com/resolve?name={host}&type=A"
+  ],
+  "fake_ip_ranges": [
+    "198.18.0.0/15",
+    "100.64.0.0/10"
+  ],
+  "host_ip_overrides": {
+    "https://intra.company.example": "10.10.0.21",
+    "https://portal.internal.company.example": "10.10.0.22"
+  }
+}
