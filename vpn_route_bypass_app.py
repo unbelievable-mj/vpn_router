@@ -19,9 +19,34 @@ from pystray import MenuItem as item
 from PIL import Image, ImageDraw
 
 BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_CONFIG = BASE_DIR / "config.json"
-EXAMPLE_CONFIG = BASE_DIR / "config.example.json"
 APP_NAME = "VPN Route Bypass"
+APP_DIR_NAME = "VPNRouteBypass"
+
+
+def _app_data_dir() -> Path:
+    """应用数据目录：开发模式为项目目录，PyInstaller 打包模式为用户 Application Support。
+
+    打包后的 .app 无法在 bundle 内写文件，配置文件、状态文件都应落在用户目录。
+    """
+    if getattr(sys, "frozen", False):
+        home = Path(os.environ.get("HOME", str(Path.home())))
+        return home / "Library" / "Application Support" / APP_DIR_NAME
+    return BASE_DIR
+
+
+def _bundle_dir() -> Path:
+    """PyInstaller 打包的资源目录（含 config.example.json）；开发模式为项目目录。"""
+    if getattr(sys, "frozen", False):
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            return Path(meipass)
+        return Path(sys.executable).resolve().parent
+    return BASE_DIR
+
+
+APP_DIR = _app_data_dir()
+DEFAULT_CONFIG = APP_DIR / "config.json"
+EXAMPLE_CONFIG = _bundle_dir() / "config.example.json"
 
 
 class BypassTrayApp:
@@ -49,6 +74,9 @@ class BypassTrayApp:
     def _ensure_config(self) -> None:
         if self.config_path.exists():
             return
+
+        # 打包模式下用户 Application Support 目录可能尚不存在
+        self.config_path.parent.mkdir(parents=True, exist_ok=True)
 
         if EXAMPLE_CONFIG.exists():
             self.config_path.write_text(
@@ -124,6 +152,10 @@ class BypassTrayApp:
         return img
 
     def _engine_cmd(self, *extra: str) -> List[str]:
+        if getattr(sys, "frozen", False):
+            # PyInstaller 打包模式：调用同目录（Contents/MacOS）下的 CLI 引擎二进制
+            exe = Path(sys.executable).resolve().parent / "vpn-route-bypass-cli"
+            return [str(exe), "--config", str(self.config_path), *extra]
         return [sys.executable, str(self.engine_script), "--config", str(self.config_path), *extra]
 
     def _run_engine_once(self, *extra: str) -> subprocess.CompletedProcess[str]:

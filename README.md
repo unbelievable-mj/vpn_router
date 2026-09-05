@@ -128,7 +128,33 @@ python3 vpn_route_bypass.py --config config.json --cleanup   # 清理（删路�
 - 写入 `/etc/hosts` 需要管理员权限：请以 `sudo` 或管理员身份运行引擎/App。
 - 如果 `local_gateway` 自动检测错误，可手工填本机网关（如路由器网关）
 
-如果你要，我可以下一步再继续做：
+## 打包与发布（macOS DMG）
 
-1. 打包成 `.app`（macOS）与 `.exe`（Windows）可直接双击启动
-2. 加上开机自启动/开机自动挂载托盘（mac LaunchAgent + Windows 任务计划）
+打包脚本 `build_macos.sh` 会构建 `VPNRouteBypass.app` 并打包成 `.dmg`，本地与 CI 共用：
+
+```bash
+# 本地构建（需要 pyinstaller：pip install pyinstaller）
+bash build_macos.sh 0.1.0          # 产出 dist/VPNRouteBypass-0.1.0.dmg
+bash build_macos.sh 0.1.0 -arm64   # 多架构时加后缀避免重名
+```
+
+打包产物结构：GUI（菜单栏 App）+ CLI 引擎两个二进制都在 `.app/Contents/MacOS/` 下，GUI 以子进程调用 CLI 引擎执行提权操作。
+
+GitHub 仓库已配置 CI/CD：
+
+- `.github/workflows/ci.yml`：push/PR 自动跑单元测试；
+- `.github/workflows/release.yml`：打 `v*` tag 时自动在 macOS（Intel + Apple Silicon 两个架构）构建 DMG，并发布到对应 GitHub Release。
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+### 关于签名与 Gatekeeper
+
+未配置 Apple Developer ID 证书时使用 **ad-hoc 签名**（`codesign --sign -`）。从 Release 下载的 dmg 安装后首次打开可能被 Gatekeeper 拦截，请运行：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/VPNRouteBypass.app
+```
+
+如需正式发布（去掉弹窗提示），需要 Apple Developer ID 证书并接入 notarization，可在 workflow 中补充签名与公证步骤。
